@@ -14,7 +14,9 @@
 # ---
 
 # %%
-from dec1.main import main as main_1
+from y20.d1.main import main as main_1
 
 # %%
 main_1()
+
+# %%
