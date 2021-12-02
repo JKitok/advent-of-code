@@ -3,3 +3,4 @@
 *.ipynb
 *.sublime-workspace
 __pycache__
+input.txt
