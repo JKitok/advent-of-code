@@ -1,33 +1,39 @@
 import os
 
+from dataclasses import dataclass
+
 import numpy as np
 
 
-def read_as_matrix(lines):
-    data = np.fromstring(" ".join(lines), sep=" ").astype(np.int64)
-    return data.reshape((5, 5))
+@dataclass
+class Board:
+    matrix: np.ndarray
 
+    @classmethod
+    def from_lines(cls, lines):
+        data = np.fromstring(" ".join(lines), sep=" ").astype(np.int64)
+        return cls(data.reshape((5, 5)))
 
-def check_bingo(matrix):
-    bingo = False
-    for axis in [0, 1]:
-        rows = np.sum(matrix, axis=axis)
-        bingo = bingo or np.any(rows == -len(rows))
-    return bingo
+    def has_bingo(self) -> bool:
+        bingo = False
+        for axis in [0, 1]:
+            rows = np.sum(self.matrix, axis=axis)
+            bingo = bingo or bool(np.any(rows == -len(rows)))
+        return bingo
+
+    def cross_number(self, number):
+        self.matrix[self.matrix == number] = -1
 
 
 def run_bingo(numbers, boards):
     for number in numbers:
-        for i in range(boards.shape[0]):
-            board = boards[i, :, :]
-            board[board == number] = -1
-            boards[i, :, :] = board
+        for board in boards:
+            board.cross_number(number)
 
-        for i in range(boards.shape[0]):
-            has_bingo = check_bingo(boards[i, :, :])
-            if has_bingo:
-                return boards[i, :, :], number, i
-    print(boards)
+        for i, board in enumerate(boards):
+            if board.has_bingo():
+                return board, number
+
     raise ValueError("No bingo?")
 
 
@@ -35,31 +41,27 @@ def read_info(lines):
     bingo_numbers = np.fromstring(lines[0], sep=",").astype(np.int64)
     boards = []
     for i in range(2, len(lines[2:]), 6):
-        boards.append(read_as_matrix(lines[i : i + 5]))
-    boards_3d = np.stack(boards)
-    return bingo_numbers, boards_3d
+        boards.append(Board.from_lines(lines[i : i + 5]))
+    return bingo_numbers, boards
 
 
 def part1(lines):
-    bingo_numbers, boards_3d = read_info(lines)
-    winning_board, last_number, _ = run_bingo(bingo_numbers, boards_3d)
-    winning_board[winning_board == -1] = 0
-    print(f"Answer: {np.sum(np.sum(winning_board))*last_number}")
-
-
-def check_num_with_bingo(boards):
-    return sum((check_bingo(boards[i, :, :]) for i in range(boards.shape[0])))
+    bingo_numbers, boards = read_info(lines)
+    winning_board, last_number = run_bingo(bingo_numbers, boards)
+    winning_board.matrix[winning_board.matrix == -1] = 0
+    print(f"Answer: {np.sum(np.sum(winning_board.matrix))*last_number}")
 
 
 def part2(lines):
-    bingo_numbers, boards_3d = read_info(lines)
-    while boards_3d.shape[0] > 0:
-        print(f"Running with {boards_3d.shape[0]} boards")
-        winning_board, last_number, index = run_bingo(bingo_numbers, boards_3d)
-        boards_3d = np.delete(boards_3d, index, axis=0)
-    winning_board[winning_board == -1] = 0
-
-    print(f"Answer: {np.sum(np.sum(winning_board))*last_number}")
+    bingo_numbers, boards = read_info(lines)
+    while len(boards) > 0:
+        winning_board, last_number = run_bingo(bingo_numbers, boards)
+        boards = [board for board in boards if not board.has_bingo()]
+        bingo_numbers = bingo_numbers[
+            np.where(bingo_numbers == last_number)[0][0] + 1 :
+        ]
+    winning_board.matrix[winning_board.matrix == -1] = 0
+    print(f"Answer: {np.sum(np.sum(winning_board.matrix))*last_number}")
 
 
 if __name__ == "__main__":
