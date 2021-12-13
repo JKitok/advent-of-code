@@ -1,6 +1,5 @@
-jupyter
-notebook
-jupytext
-plotly
 numpy
 pytest
+black
+flake8
+mypy
