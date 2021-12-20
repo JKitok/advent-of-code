@@ -5,20 +5,26 @@
 			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
 			"name": "Pytest",
 			"selector": "source.python",
-			"shell_cmd": "\"C:/dev/advent-of-code/.venv/Scripts/pytest.exe\" \"$file\""
+			"shell_cmd": "\"C:/develop/advent-of-code/.venv/Scripts/pytest.exe\" \"$file\""
 		},
 		{
 			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
 			"name": "Run file",
 			"selector": "source.python",
-			"shell_cmd": "\"C:/dev/advent-of-code/.venv/Scripts/python.exe\" -u \"$file\""
+			"shell_cmd": "\"C:/develop/advent-of-code/.venv/Scripts/python.exe\" -u \"$file\""
 		},
 		{
 			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
 			"name": "Anaconda Python Builder",
 			"selector": "source.python",
 			"shell_cmd": "\"python\" -u \"$file\""
-		}
+		},
+		{
+			"name": "Build and run",
+			"selector": "source.c++",
+			"shell": true,
+			"shell_cmd": "cmake -S . -B build && cmake --build build --target ALL_BUILD && build\\Debug\\main.exe"
+		},
 	],
 	"folders":
 	[
@@ -39,9 +45,9 @@
 	],
 	"settings":
 	{
-		"SublimeLinter.linters.flake8.executable": "C:/dev/advent-of-code/.venv/Scripts/flake8.exe",
-		"SublimeLinter.linters.mypy.executable": "C:/dev/advent-of-code/.venv/Scripts/mypy.exe",
-		"sublack.black_command": "C:/dev/advent-of-code/.venv/Scripts/black.exe",
+		"SublimeLinter.linters.flake8.executable": "C:/develop/advent-of-code/.venv/Scripts/flake8.exe",
+		"SublimeLinter.linters.mypy.executable": "C:/develop/advent-of-code/.venv/Scripts/mypy.exe",
+		"sublack.black_command": "C:/develop/advent-of-code/.venv/Scripts/black.exe",
 		"sublack.black_on_save": "true",
 		"translate_tabs_to_spaces": true
 	}
