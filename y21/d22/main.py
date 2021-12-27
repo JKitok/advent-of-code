@@ -5,6 +5,7 @@ from collections import namedtuple
 import numpy as np
 
 REGEX = r"(\d) x=(-?\d+)..(-?\d+),y=(-?\d+)..(-?\d+),z=(-?\d+)..(-?\d+)"
+Cube = namedtuple("Cube", ["status", "x1", "x2", "y1", "y2", "z1", "z2", "level"])
 
 
 def part1(sequences):
@@ -18,13 +19,12 @@ def part1(sequences):
     return np.sum(cubes)
 
 
-Cube = namedtuple("Cube", ["status", "x1", "x2", "y1", "y2", "z1", "z2", "level"])
-
-
 def part2(sequences):
     cubes = []
     for seq in sequences:
-        new_cubes = [Cube(*seq, 1)]
+        new_cubes = []
+        if seq[0]:
+            new_cubes.append(Cube(*seq, 1))
         for cube in cubes:
             x1 = max(seq[1], cube.x1)
             x2 = min(seq[2], cube.x2)
@@ -37,11 +37,16 @@ def part2(sequences):
         cubes.extend(new_cubes)
     num = 0
     for cube in cubes:
-        V = (cube.x2 - cube.x1 + 1) * (cube.x2 - cube.x1 + 1) * (cube.z2 - cube.x1 + 1)
+        V = (cube.x2 - cube.x1 + 1) * (cube.y2 - cube.y1 + 1) * (cube.z2 - cube.z1 + 1)
+        if cube.level % 2:
+            num += V
+        else:
+            num -= V
+    return num
 
 
 if __name__ == "__main__":
-    with open(os.path.join(os.path.dirname(__file__), "example.txt")) as fp:
+    with open(os.path.join(os.path.dirname(__file__), "input.txt")) as fp:
         lines = fp.readlines()
     lines = [v.strip().replace("on", "1").replace("off", "0") for v in lines]
     sequences = [map(int, re.match(REGEX, v).groups()) for v in lines]
