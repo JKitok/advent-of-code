@@ -1,6 +1,5 @@
 import os
 import re
-import functools
 import copy
 
 
@@ -51,11 +50,11 @@ def calculate_total_pressure(dict_, rates, T):
     return sum((T - v) * rates[k] for k, v in dict_.items())
 
 
-def part1(rates, map_, distance_func, T=30):
+def run(rates, map_, distance_func, T=30):
     to_open = [v for (v, k) in rates.items() if k > 0]
     all_paths = {(frozenset(["AA"]), "AA"): {"AA": 0}}
+    total = {}
 
-    best = 0
     while all_paths:
         new_paths = {}
         # Calculate new paths
@@ -68,20 +67,26 @@ def part1(rates, map_, distance_func, T=30):
                     t_open = time + distance + 1
                     if t_open <= T:
                         new_visited = frozenset((*visited, next_))
-                        if (new_visited, next_,) not in new_paths.keys() or next(
-                            reversed(new_paths[(new_visited, next_)].values())
-                        ) > t_open:
-                            new_when_on = copy.deepcopy(when_on)
-                            new_when_on[next_] = t_open
-                            new_paths[(new_visited, next_)] = new_when_on
-                    else:
-                        best = max(best, calculate_total_pressure(when_on, rates, T))
-            else:
-                best = max(best, calculate_total_pressure(when_on, rates, T))
-        all_paths = new_paths
-        print(len(new_paths))
+                        new_when_on = copy.deepcopy(when_on)
+                        new_when_on[next_] = t_open
 
-    return best
+                        if (new_visited, next_) in new_paths.keys():
+                            p_old = calculate_total_pressure(
+                                new_paths[new_visited, next_], rates, T
+                            )
+                            p_new = calculate_total_pressure(new_when_on, rates, T)
+                            if p_new < p_old:
+                                continue
+
+                        new_paths[(new_visited, next_)] = new_when_on
+                        total[(new_visited, next_)] = new_when_on
+                    else:
+                        total[(visited, pos)] = when_on
+            else:
+                total[(visited, pos)] = when_on
+        all_paths = new_paths
+
+    return total
 
 
 def part2(rates, map_):
@@ -101,5 +106,21 @@ if __name__ == "__main__":
             a, b = b, a
         return distance_map[(a, b)]
 
-    print(f"Part 1: {part1(rates, map_, get_distance)}")
-    # print(f"Part 2: {part2(rates, map_)}")
+    all_30 = run(rates, map_, get_distance, T=30)
+    pressures = [calculate_total_pressure(v, rates, 30) for v in all_30.values()]
+    print(f"Part 1: {max(pressures)}")
+
+    max_ = 0
+    all_26 = run(rates, map_, get_distance, T=26)
+    all_26_values = list(all_26.values())
+    keys = [set(list(v.keys())[1:]) for v in all_26_values]
+    for i, v1 in enumerate(all_26_values):
+        print(f"{i}/{len(all_26)}", end="\r")
+        for j, v2 in enumerate(all_26_values[i + 1 :]):
+            if keys[i].isdisjoint(keys[i + 1 + j]):
+                max_ = max(
+                    max_,
+                    calculate_total_pressure(v1, rates, 26)
+                    + calculate_total_pressure(v2, rates, 26),
+                )
+    print(f"Part 2: {max_}")
