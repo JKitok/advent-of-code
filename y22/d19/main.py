@@ -1,6 +1,5 @@
 import os
 import re
-import copy
 import enum
 from dataclasses import dataclass, astuple
 from queue import Queue
@@ -57,20 +56,7 @@ def get_cost(bp, t):
 
 def build(t: Type, bp, ores):
     cost = get_cost(bp, t)
-    return (o - c for (o, c) in zip(ores, cost))
-
-
-def can_build(bp: BluePrint, ores):
-    ret = []
-    if ores[0] >= bp.ore[0]:
-        ret.append(Type.ORE)
-    if ores[0] >= bp.clay[0]:
-        ret.append(Type.CLAY)
-    if ores[0] >= bp.obs[0] and ores[1] >= bp.obs[1]:
-        ret.append(Type.OBS)
-    if ores[0] >= bp.geode[0] and ores[2] >= bp.geode[2]:
-        ret.append(Type.GEODE)
-    return ret
+    return tuple((o - c for (o, c) in zip(ores, cost)))
 
 
 def get_possible_next(bp, robots):
@@ -99,46 +85,41 @@ def time_for_build(bp: BluePrint, type_: Type, robots, ores, t):
 def run(bp, T):
     results = set()
     queue = Queue()
-    queue.put(State())
+    queue.put(State(build_next=Type.ORE), State(build_next=Type.CLAY))
     cache = {}
+
     while not queue.empty():
         t, ores, robots, build_next = astuple(queue.get())
-        if build_next is not None:
-            t_b = time_for_build(bp, build_next, robots, ores, t)
-            key = (ores[-1], robots, build_next)
-            if cache.get(key, T + 1) < t_b:
-                continue
-        while t < T:
-            building = None
-            possible = can_build(bp, ores)
-            if possible:
-                if build_next is not None and build_next in possible:
-                    building = build_next
-                    ores = build(building, bp, ores)
-                    build_next = None
-                elif build_next is None:
-                    for v in get_possible_next(bp, robots):
-                        t_b = time_for_build(bp, v, robots, ores, t)
-                        key = (ores[-1], robots, v)
-                        if cache.get(key, T + 1) >= t_b:
-                            cache[key] = t_b
-                            state = State(t, ores, robots, v)
-                            queue.put(state)
-                        else:
-                            pass
-                    break
-            ores = tuple(o + r for (o, r) in zip(ores, robots))
-            if building is not None:
-                robots = tuple(
-                    r + (1 if building == t else 0)
-                    for (r, t) in zip(
-                        robots, [Type.ORE, Type.CLAY, Type.OBS, Type.GEODE]
-                    )
-                )
-            t += 1
+        t_b = time_for_build(bp, build_next, robots, ores, t)
+        key = (robots, build_next)
+        best = cache.get(key, (0, T + 1))
+        if best[0] >= ores[-1] and best[1] < t_b:
+            # Ignore branch
+            continue
 
-        if t >= T:
-            results.add(State(t, ores, robots, v))
+        # Count until build and build
+        ores = tuple((o + (t_b - t) * r for (o, r) in zip(ores, robots)))
+        t = t_b + 1
+        ores = build(build_next, bp, ores)
+        robots = tuple(r + (build_next == e) for r, e in zip(robots, Type))
+
+        for v in get_possible_next(bp, robots):
+            t_b = time_for_build(bp, v, robots, ores, t)
+
+            if t_b > T:
+                # Count up ores and store
+                ores = tuple((o + (T - t) * r for (o, r) in zip(ores, robots)))
+                results.add(State(t, ores, robots, v))
+            else:
+                # Generate next builds and store
+                key = (robots, v)
+                best = cache.get(key, (0, T + 1))
+                if ores[-1] >= best[0] and t_b <= best[1]:
+                    cache[key] = (ores[-1], t_b)
+                    state = State(t, ores, robots, v)
+                    queue.put(state)
+                    break
+
     results = sorted(results, key=lambda x: x.ores[-1], reverse=True)
     return results[0].ores[-1]
 
@@ -162,7 +143,7 @@ def part2(blueprints):
 
 
 if __name__ == "__main__":
-    with open(os.path.join(os.path.dirname(__file__), "input.txt")) as fp:
+    with open(os.path.join(os.path.dirname(__file__), "example.txt")) as fp:
         lines = fp.readlines()
 
     lines = [v.strip() for v in lines]
