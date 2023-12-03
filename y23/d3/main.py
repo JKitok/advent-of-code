@@ -43,8 +43,47 @@ def part1(lines):
     return sum_
 
 
+def find_number(lines, ii, jj):
+    a = 0
+    b = 0
+    while lines[ii][jj - a].isdigit():
+        a += 1
+    while lines[ii][jj + b].isdigit():
+        b += 1
+    num = int(lines[ii][jj - a + 1 : jj + b])
+    return num, jj + b
+
+
 def part2(lines):
-    pass
+    sum_ = 0
+    i = 1
+    j = 1
+    while True:
+        if i >= len(lines) - 1:
+            return sum_
+        if j >= len(lines[0]) - 1:
+            i += 1
+            j = 1
+            continue
+
+        if lines[i][j] != "*":
+            j += 1
+            continue
+        else:
+            nums = []
+            for ii in [i - 1, i, i + 1]:
+                jj = j - 1
+                while jj <= j + 1:
+                    if not lines[ii][jj].isdigit():
+                        jj += 1
+                    else:
+                        num, jj = find_number(lines, ii, jj)
+                        nums.append(num)
+
+            if len(nums) == 2:
+                ratio = nums[0] * nums[1]
+                sum_ += ratio
+            j += 1
 
 
 if __name__ == "__main__":
