@@ -6,20 +6,23 @@ from dataclasses import dataclass
 import numpy as np
 
 
+def max_9(v):
+    if isinstance(v, int):
+        return v % 10
+    else:
+        return v
+
+
 def print_grid(lines):
     print("")
     for line in lines:
-        print("".join((str(v) for v in line)))
+        print("".join((str(max_9(v)) for v in line)))
     print("")
 
 
 def find_start(lines):
-    for y, line in enumerate(lines):
-        try:
-            x = line.index("S")
-            return x, y
-        except ValueError:
-            continue
+    x, y = np.where(lines == "S")
+    return x[0], y[0]
 
 
 def find_start_direction(lines, x, y, first=True):
@@ -56,52 +59,50 @@ def find_next_direction(dx, dy, s):
         raise ValueError(s)
 
 
-def traverse_pipe(lines, start_x, start_y, first):
+def traverse_pipe(array, start_x, start_y, first, func):
     x, y = start_x, start_y
-    dx, dy = find_start_direction(lines, x, y, first)
-    step = 1
+    dx, dy = find_start_direction(array, x, y, first)
     s = lines[y + dy][x + dx]
-
-    while not s == "S":
+    continue_ = True
+    while not s == "S" and continue_:
         x += dx
         y += dy
-        lines[y][x] = step
-        step += 1
+        continue_ = func(x, y, dx, dy, s)
         dx, dy = find_next_direction(dx, dy, s)
         s = lines[y + dy][x + dx]
-    return lines
 
 
-def find_min_grid(grid1, grid2):
-    max_ = 0
-    grid = copy.deepcopy(grid1)
-    for y in range(len(grid)):
-        for x in range(len(grid[0])):
-            if isinstance(grid[y][x], int):
-                grid[y][x] = min(grid1[y][x], grid2[y][x])
-                max_ = max(max_, grid[y][x])
-    return grid, max_
+class MarkDistance:
+    def __init__(self, grid):
+        self.step = 1
+        self.grid = np.zeros_like(grid, dtype=np.int64)
+
+    def __call__(self, x, y, dx, dy, s):
+        self.grid[y][x] = self.step
+        self.step += 1
+        return True
 
 
-def part1(lines):
-    x, y = find_start(lines)
-    line1 = traverse_pipe(copy.deepcopy(lines), x, y, first=True)
-    line2 = traverse_pipe(copy.deepcopy(lines), x, y, first=False)
-    grid, max_ = find_min_grid(line1, line2)
-    # print_grid(grid)
-    return max_
+def part1(array):
+    y, x = find_start(array)
+    dist1 = MarkDistance(array)
+    dist2 = MarkDistance(array)
+    traverse_pipe(array, x, y, first=True, func=dist1)
+    traverse_pipe(array, x, y, first=False, func=dist2)
+    return np.max(np.minimum(dist1.grid, dist2.grid))
 
 
-def part2(lines):
+def part2(array):
     pass
 
 
 if __name__ == "__main__":
-    with open(os.path.join(os.path.dirname(__file__), "input.txt")) as fp:
+    with open(os.path.join(os.path.dirname(__file__), "example.txt")) as fp:
         lines = fp.readlines()
 
     lines = [v.strip().replace("7", "\\") for v in lines]
     lines = [list(v) for v in lines]
+    arr = np.array(lines, dtype=np.str_)
 
-    print(f"Part 1: {part1(lines)}")
-    print(f"Part 2: {part2(lines)}")
+    print(f"Part 1: {part1(arr)}")
+    print(f"Part 2: {part2(arr)}")
