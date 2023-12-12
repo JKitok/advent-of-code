@@ -6,23 +6,26 @@ from dataclasses import dataclass
 import numpy as np
 
 
-def part1(array):
-    # Expand rows
-    indices = np.where(np.sum(array, 1) == 0)
-    for idx in reversed(*indices):
-        array = np.insert(array, idx, np.zeros((1, array.shape[1])), axis=0)
-    # Expand columns
-    indices = np.where(np.sum(array, 0) == 0)
-    for idx in reversed(*indices):
-        array = np.insert(array, idx, np.zeros((1, array.shape[0])), axis=1)
+def run(array, expansion=1):
+    row_indices = np.where(np.sum(array, 1) == 0)[0]
+    col_indices = np.where(np.sum(array, 0) == 0)[0]
     # Calculate pairwise distances
     locations = np.where(array > 0)
     sum_ = 0
     for i in range(len(locations[0]) - 1):
         for j in range(i, len(locations[0])):
-            sum_ += abs(locations[0][i] - locations[0][j]) + abs(
-                locations[1][i] - locations[1][j]
+            x1 = locations[0][i]
+            x2 = locations[0][j]
+            y1 = locations[1][i]
+            y2 = locations[1][j]
+
+            dx = abs(x2 - x1) + expansion * np.sum(
+                (min(x1, x2) < row_indices) & (row_indices < max(x1, x2))
             )
+            dy = abs(y2 - y1) + expansion * np.sum(
+                (min(y1, y2) < col_indices) & (col_indices < max(y1, y2))
+            )
+            sum_ += dx + dy
     return sum_
 
 
@@ -38,5 +41,5 @@ if __name__ == "__main__":
     lines = [list(v) for v in lines]
     arr = np.array(lines, dtype=np.int64)
 
-    print(f"Part 1: {part1(arr)}")
-    print(f"Part 2: {part2(arr)}")
+    print(f"Part 1: {run(arr, expansion=1)}")
+    print(f"Part 2: {run(arr, expansion=1000000 - 1)}")
