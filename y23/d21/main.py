@@ -25,15 +25,33 @@ def part1(array, N=64):
     return len(positions)
 
 
-def part2(lines):
-    pass
+def part2(array, N=6):
+    res = np.where(array == "S")
+    x0 = res[0][0]
+    x1 = res[1][0]
+    nums = np.zeros_like(array, dtype=np.int32)
+    nums[x0, x1] = 1
+    mask = np.zeros_like(array, dtype=np.bool8)
+    mask[np.where(array == ".")] = 1
+    mask[x0, x1] = 1
+    i = 0
+    while i < N:
+        i += 1
+        nums = (
+            np.roll(nums, 1)
+            + np.roll(nums, -1)
+            + np.roll(nums, 1, axis=0)
+            + np.roll(nums, -1, axis=0)
+        )
+        nums[np.where(mask == 0)] = 0
+    return np.sum(nums)
 
 
 if __name__ == "__main__":
-    with open(os.path.join(os.path.dirname(__file__), "input.txt")) as fp:
+    with open(os.path.join(os.path.dirname(__file__), "example.txt")) as fp:
         lines = fp.readlines()
 
     lines = [list(v.strip()) for v in lines]
     arr = np.array(lines, dtype=np.str_)
-    print(f"Part 1: {part1(arr)}")
+    # print(f"Part 1: {part1(arr)}")
     print(f"Part 2: {part2(arr)}")
