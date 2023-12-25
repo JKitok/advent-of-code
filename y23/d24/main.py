@@ -7,17 +7,6 @@ import numpy as np
 
 
 def find_intersection_point_3d(line1, line2, ignore_z=True):
-    """
-    Find the intersection point of two lines in 3D space defined by a point and a direction vector.
-
-    Parameters:
-    - line1: A tuple (x1, y1, z1, vx1, vy1, vz1) representing a line: x = x1 + t*vx1, y = y1 + t*vy1, z = z1 + t*vz1
-    - line2: A tuple (x2, y2, z2, vx2, vy2, vz2) representing another line: x = x2 + t*vx2, y = y2 + t*vy2, z = z2 + t*vz2
-
-    Returns:
-    - If lines intersect: A tuple (x, y, z) representing the intersection point
-    - If lines are parallel (no intersection): None
-    """
     x1, y1, z1, vx1, vy1, vz1 = line1
     x2, y2, z2, vx2, vy2, vz2 = line2
     if ignore_z:
@@ -74,15 +63,50 @@ def part1(paths, min_=200000000000000, max_=400000000000000):
     return N
 
 
-def part2(lines):
-    pass
+def f(x, paths):
+    res = np.zeros((3 * len(paths)))
+    for i in range(3):
+        for n, p in enumerate(paths):
+            res[3 * n + i] = x[i] - p[i] + x[6 + n] * (x[3 + i] - p[3 + i])
+    return res
+
+
+def Jacobian(x, paths):
+    J = np.zeros((3 * len(paths), 6 + len(paths)))
+    for n, p in enumerate(paths):
+        for i in range(3):
+            J[3 * n + i, i] = 1
+            J[3 * n + i, 3 + i] = x[6 + n]
+            J[3 * n + i, 6 + n] = x[3 + i] - p[3 + i]
+    return J
+
+
+def part2(paths):
+    x = np.zeros(6 + len(paths)) + 1
+    for i in range(6):
+        x[i] = paths[0][i] + 10
+    stop = False
+    n = 0
+    while not stop:
+        b = -f(x, paths)
+        A = Jacobian(x, paths)
+        delta, *_ = np.linalg.lstsq(A, b, rcond=None)
+        x += delta
+        n += 1
+        change = np.sum(np.abs(delta))
+        if change < 1:
+            stop = True
+    print(f"Solved using {n} iterations")
+    return int(np.round(np.sum(x[:3])))
 
 
 def parse(lines):
     paths = []
     for line in lines:
         pos, vel = map(str.strip, line.split("@"))
-        paths.append((*map(int, pos.split(",")), *map(int, vel.split(","))))
+        pos = map(lambda x: int(x) / 1, pos.split(","))
+        vel = map(lambda x: int(x) / 1, vel.split(","))
+        paths.append((*pos, *vel))
     return paths
 
 
@@ -94,4 +118,4 @@ if __name__ == "__main__":
     paths = parse(lines)
 
     print(f"Part 1: {part1(paths)}")
-    print(f"Part 2: {part2(lines)}")
+    print(f"Part 2: {part2(paths)}")
