@@ -1,17 +1,18 @@
 import os
-import re
+import math
 
-from dataclasses import dataclass
-
-import numpy as np
+import networkx as nx
 
 
 def part1(lines):
-    pass
+    g = nx.Graph()
+    for line in lines:
+        v, list_ = line.split(": ")
+        for adj in list_.split(" "):
+            g.add_edge(v, adj)
 
-
-def part2(lines):
-    pass
+    g.remove_edges_from(nx.minimum_edge_cut(g))
+    return math.prod((len(c) for c in nx.connected_components(g)))
 
 
 if __name__ == "__main__":
@@ -21,4 +22,3 @@ if __name__ == "__main__":
     lines = [v.strip() for v in lines]
 
     print(f"Part 1: {part1(lines)}")
-    print(f"Part 2: {part2(lines)}")

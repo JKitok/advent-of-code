@@ -1,5 +1,5 @@
 import os
-from queue import Queue
+from tqdm import tqdm
 import numpy as np
 
 
@@ -25,26 +25,48 @@ def part1(array, N=64):
     return len(positions)
 
 
-def part2(array, N=6):
+def fix(num):
+    v = np.int64(str(num).replace("2", "1").replace("3", "1").replace("4", "1"))
+    return v
+
+
+def part2(array, N=10):
     res = np.where(array == "S")
     x0 = res[0][0]
     x1 = res[1][0]
-    nums = np.zeros_like(array, dtype=np.int32)
+    nums = np.zeros_like(array, dtype=np.int64)
     nums[x0, x1] = 1
-    mask = np.zeros_like(array, dtype=np.bool8)
+    mask = np.zeros_like(array, dtype=np.bool_)
     mask[np.where(array == ".")] = 1
     mask[x0, x1] = 1
-    i = 0
-    while i < N:
-        i += 1
-        nums = (
-            np.roll(nums, 1)
-            + np.roll(nums, -1)
-            + np.roll(nums, 1, axis=0)
-            + np.roll(nums, -1, axis=0)
-        )
-        nums[np.where(mask == 0)] = 0
-    return np.sum(nums)
+    for i in tqdm(range(N)):
+        new_nums = np.zeros_like(nums)
+        new_nums[1:, :] += nums[:-1, :]
+        new_nums[:-1, :] += nums[1:, :]
+        new_nums[:, 1:] += nums[:, :-1]
+        new_nums[:, :-1] += nums[:, 1:]
+        new_nums[0, :] += 10 * nums[-1, :]
+        new_nums[-1, :] += 10 * nums[0, :]
+        new_nums[:, 0] = 10 * nums[:, -1]
+        new_nums[:, -1] = 10 * nums[:, 0]
+        new_nums = np.multiply(mask, new_nums)
+        indices = np.where(new_nums > 0)
+        for i, j in zip(indices[0], indices[1]):
+            new_nums[i, j] = fix(new_nums[i, j])
+        print(nums)
+        nums = new_nums
+
+    N = 0
+    non_zero = np.where(nums > 0)
+    for i, j in zip(indices[0], indices[1]):
+        val = nums[i, j]
+        while val > 0:
+            is_val = val % 10
+            if is_val:
+                N += 1
+            val //= 10
+
+    return N
 
 
 if __name__ == "__main__":
