@@ -5,3 +5,5 @@ black
 flake8
 mypy
 networkx
+plotly
+jupyter
