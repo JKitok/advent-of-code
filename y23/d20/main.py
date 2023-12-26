@@ -2,7 +2,8 @@ import os
 import copy
 from dataclasses import dataclass
 from enum import Enum
-from typing import Optional, List, Tuple
+import math
+from typing import Optional, List
 from queue import Queue
 
 
@@ -93,11 +94,25 @@ def parse(lines):
     return modules
 
 
-def run(modules, NUM):
+def run(modules, NUM, part2=False):
     signals = []
     q = Queue()
     N = 0
-    while N < NUM:
+    stop = False
+    # For part 2:
+    # The following are all Conjunction modules connected directly to another Conjunction module that itself
+    # is connected to the rx-module. I have printed the states of these four modules, and they all switch to
+    # high for a single button press, and switch to low directly after. They do this with a given period respectively
+    # (why is evident when looking and the graph, all 4 conjunction modules are part of their own cycle).
+    #
+    # Therefore, what will happen is that all four of these modules will switch to high on the same period,
+    # which will trigger the conjunction module that they are connected to send a high signal to rx, and we
+    # are done.
+    #
+    # Since this will take quite some time, we register the period for all four conjunction modules respectively,
+    # and then calculate the lowest common multiple to get the button press when this will happen.
+    periods = {k: None for k in ["fv", "jd", "vm", "lm"]}
+    while N < NUM and not stop:
         # Press button
         q.put(("broadcaster", Signal(SignalState.LOW, "button")))
         N += 1
@@ -111,9 +126,21 @@ def run(modules, NUM):
                 if signal:
                     for o in rec.outputs:
                         q.put((o, signal))
-    num_low = sum((s.state == SignalState.LOW for _, s in signals))
-    num_high = sum((s.state == SignalState.HIGH for _, s in signals))
-    return num_low * num_high
+
+                    if part2 and rec.name in periods.keys():
+                        if signal.state == SignalState.HIGH:
+                            if periods[rec.name] is None:
+                                periods[rec.name] = N
+                            if all((v is not None for v in periods.values())):
+                                print(f"N={N} and we have all periods")
+                                stop = True
+
+    if not part2:
+        num_low = sum((s.state == SignalState.LOW for _, s in signals))
+        num_high = sum((s.state == SignalState.HIGH for _, s in signals))
+        return num_low * num_high
+    else:
+        return math.lcm(*periods.values())
 
 
 if __name__ == "__main__":
@@ -124,3 +151,4 @@ if __name__ == "__main__":
     modules = parse(lines)
 
     print(f"Part 1: {run(copy.deepcopy(modules), NUM=1000)}")
+    print(f"Part 2: {run(copy.deepcopy(modules), NUM=1e5, part2=True)}")
