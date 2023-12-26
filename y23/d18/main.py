@@ -1,53 +1,59 @@
 import os
 import re
-from queue import Queue
-import numpy as np
 
 STEPS = {"R": (1, 0), "L": (-1, 0), "U": (0, 1), "D": (0, -1)}
+NUM_TO_STEP = {"0": "R", "1": "D", "2": "L", "3": "U"}
 
 
-def floodfill(arr, coords, val):
-    x, y = coords
-    val_to_replace = arr[y, x]
-    q = Queue()
-    q.put((x, y))
-    while not q.empty():
-        x, y = q.get()
-        arr[y, x] = val
-        for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]:
-            if 0 <= y + dy < arr.shape[0] and 0 <= x + dx < arr.shape[1]:
-                if arr[y + dy, x + dx] == val_to_replace:
-                    q.put((x + dx, y + dy))
-                    arr[y + dy, x + dx] = val
-    return arr
+def get_area(points):
+    # Using the shoelace formula, trapezoid formula assuming points[0]==points[-1]
+    A = 0
+    for (x1, y1), (x2, y2) in zip(points[:-1], points[1:]):
+        A += (y1 + y2) * (x1 - x2)
+    return 0.5 * A
+
+
+def calculate_num_boundary_cubes(points):
+    N = 0
+    for (x1, y1), (x2, y2) in zip(points[:-1], points[1:]):
+        dx = abs(x1 - x2)
+        dy = abs(y1 - y2)
+        N += dx + dy
+    return N
+
+
+def calculate_volume(points):
+    A = get_area(points)
+    if A < 0:
+        A = -A
+        points = [*reversed(points)]
+    n_ext_points = calculate_num_boundary_cubes(points)
+    # Picks theorem gives internal points
+    n_interior_points = A + 1 - n_ext_points / 2
+    return int(round(n_interior_points + n_ext_points))
 
 
 def part1(lines):
-    coords = [(0, 0)]
     x, y = 0, 0
-    for direction, N, color in lines:
-        for n in range(int(N)):
-            dx, dy = STEPS[direction]
-            x += dx
-            y += dy
-            coords.append((x, y))
-    min_x = min(v[0] for v in coords)
-    max_x = max(v[0] for v in coords)
-    min_y = min(v[1] for v in coords)
-    max_y = max(v[1] for v in coords)
-    x_off = -min_x + 1
-    y_off = -min_y + 1
-    arr = np.zeros((max_y - min_y + 3, max_x - min_x + 3), dtype=np.int64)
-    for x, y in coords:
-        arr[y + y_off, x + x_off] = 1
-
-    arr = floodfill(arr, (0, 0), 2)
-    print(np.flipud(arr))
-    return np.sum(arr != 2)
+    points = [(x, y)]
+    for d, t, _ in lines:
+        dx, dy = STEPS[d]
+        x += int(t) * dx
+        y += int(t) * dy
+        points.append((x, y))
+    return calculate_volume(points)
 
 
 def part2(lines):
-    pass
+    x, y = 0, 0
+    points = [(x, y)]
+    for *_, hex_ in lines:
+        dx, dy = STEPS[NUM_TO_STEP[hex_[5]]]
+        t = int(hex_[0:5], 16)
+        x += t * dx
+        y += t * dy
+        points.append((x, y))
+    return calculate_volume(points)
 
 
 if __name__ == "__main__":
