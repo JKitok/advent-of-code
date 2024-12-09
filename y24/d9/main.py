@@ -1,47 +1,105 @@
 import os
-import copy
-from collections import defaultdict
-import itertools
+from tqdm import tqdm
 
 
-def run(lines, resonance=False):
-    N = len(lines[0])
-    M = len(lines)
-    antennas = defaultdict(lambda: [])
-    anti_nodes = defaultdict(lambda: [])
-    for i, line in enumerate(lines):
-        for j, v in enumerate(line):
-            if v != ".":
-                antennas[v].append((i, j))
+def part1(line):
+    files = [*map(int, line[::2])]
+    ids = [*range(len(files))]
+    empty_spaces = [*map(int, line[1::2])]
+    checksum = 0
+    end_file = 0
+    fill_space = 0
+    end_id = 0
+    index = 0
+    while True:
+        if end_file == 0:
+            end_id = ids.pop()
+            end_file = files.pop()
 
-    for frequency, locations in antennas.items():
-        for p1, p2 in itertools.combinations(locations, 2):
-            dn = p2[0] - p1[0]
-            dm = p2[1] - p1[1]
+        if fill_space == 0:
+            if len(files) > 0:
+                # Grab the next file and fill its contents
+                front_id = ids.pop(0)
+                front_file = files.pop(0)
+                for _ in range(front_file):
+                    checksum += index * front_id
+                    index += 1
+            # Grab the next empty space to fill
+            fill_space = empty_spaces.pop(0)
 
-            for point, direction in ((p2, 1), (p1, -1)):
-                if resonance:
-                    anti_nodes[point].append(frequency)
-                factor = 1
-                while True:
-                    node = (
-                        point[0] + direction * factor * dn,
-                        point[1] + direction * factor * dm,
+        # Fill space as much as possible or entire file
+        num_fill = min(end_file, fill_space)
+        for _ in range(num_fill):
+            checksum += index * end_id
+            index += 1
+
+        end_file -= num_fill
+        fill_space -= num_fill
+
+        if len(files) == 0 and end_file == 0:
+            break
+
+    return checksum
+
+
+def part2(line):
+    if len(line) % 2 != 0:
+        line += "0"
+    system = []  # List of tuples: (size, id | None)
+    files = []
+    id_ = 0
+    for file, space in pairwise(line):
+        files.append((int(file), id_))
+        system.append((int(file), id_))
+        system.append((int(space), None))
+        id_ += 1
+
+    for size, file_id in tqdm(reversed(files)):
+        try:
+            idx_for_file = system.index((size, file_id))
+            idx, (place_size, _) = next(
+                (i, x) for (i, x) in enumerate(system) if x[1] is None and x[0] >= size
+            )
+            if idx < idx_for_file:
+                if system[idx_for_file + 1][1] is not None:
+                    system[idx_for_file] = (size, None)
+                else:
+                    system[idx_for_file + 1] = (
+                        system[idx_for_file + 1][0] + size,
+                        None,
                     )
-                    if 0 <= node[0] < N and 0 <= node[1] < M:
-                        anti_nodes[node].append(frequency)
-                        factor += 1
-                        if not resonance:
-                            break
-                    else:
-                        break
+                    system.remove((size, file_id))
 
-    return len(anti_nodes.items())
+                system[idx] = (size, file_id)
+                remaining_size = place_size - size
+                if remaining_size > 0:
+                    if system[idx + 1][1] is not None:
+                        system.insert(idx + 1, (remaining_size, None))
+                    else:
+                        system[idx + 1] = (system[idx + 1][0] + remaining_size, None)
+        except StopIteration:
+            pass  # Don't move the file
+
+    checksum = 0
+    index = 0
+    for size, file_id in tqdm(system):
+        if file_id is None:
+            index += size
+        else:
+            for _ in range(size):
+                checksum += index * file_id
+                index += 1
+    return checksum
+
+
+def pairwise(iterable):
+    a = iter(iterable)
+    return zip(a, a)
 
 
 if __name__ == "__main__":
     with open(os.path.join(os.path.dirname(__file__), "input.txt")) as fp:
         lines = fp.readlines()
     lines = [v.rstrip("\n") for v in lines]
-    print(f"Part 1: {run(copy.deepcopy(lines), resonance=False)}")
-    print(f"Part 2: {run(copy.deepcopy(lines), resonance=True)}")
+    print(f"Part 1: {part1(lines[0])}")
+    print(f"Part 2: {part2(lines[0])}")
