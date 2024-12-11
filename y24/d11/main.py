@@ -1,20 +1,31 @@
 import os
-import copy
-from dataclasses import dataclass
-import numpy as np
+from collections import defaultdict
 
 
-def part1(lines):
-    pass
+def run(line, N):
+    values = line.split()
+    stones = defaultdict(int)
+    for v in values:
+        stones[int(v)] += 1
+    for i in range(N):
+        new_stones = defaultdict(int)
+        for v, num in stones.items():
+            if v == 0:
+                new_stones[1] += num
+            elif len(as_string := str(v)) % 2 == 0:
+                size = len(as_string) // 2
+                new_stones[int(as_string[:size])] += num
+                new_stones[int(as_string[size:])] += num
+            else:
+                new_stones[v * 2024] += num
+        stones = new_stones
 
-
-def part2(lines):
-    pass
+    return sum(stones.values())
 
 
 if __name__ == "__main__":
-    with open(os.path.join(os.path.dirname(__file__), "example.txt")) as fp:
+    with open(os.path.join(os.path.dirname(__file__), "input.txt")) as fp:
         lines = fp.readlines()
     lines = [v.rstrip("\n") for v in lines]
-    print(f"Part 1: {part1(copy.deepcopy(lines))}")
-    print(f"Part 2: {part2(copy.deepcopy(lines))}")
+    print(f"Part 1: {run(lines[0], N=25)}")
+    print(f"Part 2: {run(lines[0], N=75)}")
