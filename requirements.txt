@@ -7,3 +7,4 @@ mypy
 networkx
 plotly
 jupyter
+opencv-python 
