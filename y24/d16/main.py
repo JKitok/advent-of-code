@@ -1,51 +1,64 @@
 import os
-import copy
 import numpy as np
+import copy
+from collections import namedtuple
+from dataclasses import dataclass
+
+Key = namedtuple("Index", ["index", "direction"])
+Value = namedtuple("Value", ["cost", "visited_index"])
+
+
+@dataclass
+class Value:
+    cost: int
+    visited_index: list
 
 
 def run(grid):
     start = np.where(grid == "S")
-    start_i1 = start[0][0]
-    start_i2 = start[1][0]
+    start = start[0][0] + start[1][0] * 1j
     end = np.where(grid == "E")
-    end_i1 = end[0][0]
-    end_i2 = end[1][0]
-    costs = np.zeros_like(grid, dtype=int)
-    visited = np.zeros_like(grid, dtype=bool)
-    directions = np.zeros_like(grid, dtype=np.complex64)
-    num_steps = np.zeros_like(grid, dtype=int)
-    costs.fill(1e9)
-    directions.fill(0 + 1j)
-    costs[start_i1, start_i2] = 0
-    while not visited[end_i1, end_i2]:
-        masked_cost = np.where(visited, 1e9, costs)
-        i1, i2 = np.unravel_index(np.argmin(masked_cost), costs.shape)
-        cost = costs[i1, i2]
-        direction = directions[i1, i2]
-        num_step = num_steps[i1, i2]
-        coord = i1 + i2 * 1j
-        visited[i1, i2] = True
+    end = end[0][0] + end[1][0] * 1j
+    to_check = {}
+    visited = {}
+    to_check[Key(start, (0 + 1j))] = Value(0, [start])
+    while end not in visited:  # Input and examples only have one way to reach the end
+        key = min(to_check, key=lambda x: to_check[x].cost)
+        value = to_check[key]
+        del to_check[key]
+        visited[key.index] = value
         for m, additional_cost in zip([1, 1j, -1j, -1], [0, 1000, 1000, 2000]):
-            new_direction = direction * m
-            new_coord = coord + new_direction
-            new_i1 = int(np.round(new_coord.real))
-            new_i2 = int(np.round(new_coord.imag))
-            new_cost = cost + additional_cost + 1
-            if grid[new_i1, new_i2] == "#":
+            new_direction = key.direction * m
+            new_index = key.index + new_direction
+            new_cost = value.cost + additional_cost + 1
+            if (
+                grid[
+                    int(np.round(new_index.real)),
+                    int(np.round(new_index.imag)),
+                ]
+                == "#"
+            ):
                 continue
-            elif costs[new_i1, new_i2] == new_cost:
-                num_steps[new_i1, new_i2] += num_step
-            elif costs[new_i1, new_i2] > new_cost:
-                costs[new_i1, new_i2] = new_cost
-                directions[new_i1, new_i2] = new_direction
-                num_steps[new_i1, new_i2] = num_step + 1
+            new_key = Key(new_index, new_direction)
+            if new_key not in to_check or to_check[new_key].cost > new_cost:
+                v = Value(0, [])
+                v.cost = new_cost
+                v.visited_index = copy.deepcopy(value.visited_index)
+                v.visited_index.append(new_index)
+                to_check[new_key] = v
+            elif to_check[new_key].cost == new_cost:
+                for v in value.visited_index:
+                    if v not in to_check[new_key].visited_index:
+                        to_check[new_key].visited_index.append(v)
 
-    print(f"Part 1: {costs[end_i1, end_i2]}")
-    print(f"Part 2: {num_steps[end_i1, end_i2]}")
+            if key.index == end:
+                print(f"Part 1: {value.cost}")
+
+    print(f"Part 2: {len(visited[end].visited_index)}")
 
 
 if __name__ == "__main__":
-    with open(os.path.join(os.path.dirname(__file__), "example.txt")) as fp:
+    with open(os.path.join(os.path.dirname(__file__), "input.txt")) as fp:
         lines = fp.readlines()
     lines = [v.rstrip("\n") for v in lines]
     grid = np.array([list(line) for line in lines], dtype=str)
