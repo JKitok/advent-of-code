@@ -8,3 +8,4 @@ networkx
 plotly
 jupyter
 opencv-python 
+tqdm
