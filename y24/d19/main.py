@@ -1,20 +1,31 @@
 import os
-import copy
-from dataclasses import dataclass
-import numpy as np
+from tqdm import tqdm
+import functools
 
+def run(lines):
+    types_list, _, *towels = lines
+    types = tuple([*map(str.strip, types_list.split(","))])
+    ways = []
+    for towel in tqdm(towels):
+        ways.append(ways_to_construct(towel, types))
 
-def part1(lines):
-    pass
+    print(f"Part 1: {sum((1 for v in ways if v > 0))}")
+    print(f"Part 2: {sum((v for v in ways))}")
 
+@functools.cache
+def ways_to_construct(towel, types):
+    num_ways = 0
 
-def part2(lines):
-    pass
+    for t in types:
+        if t == towel:
+            num_ways += 1
+        if towel.startswith(t):
+            num_ways += ways_to_construct(towel.replace(t, "", 1), types)
+    return num_ways
 
 
 if __name__ == "__main__":
-    with open(os.path.join(os.path.dirname(__file__), "example.txt")) as fp:
+    with open(os.path.join(os.path.dirname(__file__), "input.txt")) as fp:
         lines = fp.readlines()
     lines = [v.rstrip("\n") for v in lines]
-    print(f"Part 1: {part1(copy.deepcopy(lines))}")
-    print(f"Part 2: {part2(copy.deepcopy(lines))}")
+    run(lines)
