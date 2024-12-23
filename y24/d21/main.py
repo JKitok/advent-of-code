@@ -2,7 +2,6 @@ import os
 import itertools
 import functools
 
-
 def get_numpad_coordinate(v):
     if v == "0":
         return (1, 0)
@@ -53,7 +52,7 @@ def generate_numpad_sequences(numpad_start, numpad_end):
         # Check that we don't pass any restricted areas
         if not check_legal_sequence(seq):
             continue
-        yield (*seq, "A")
+        yield "".join((*seq, "A"))
 
 
 def generate_directional_sequences(dir_start, dir_end):
@@ -83,50 +82,30 @@ def generate_directional_sequences(dir_start, dir_end):
     for seq in set([sequence1, sequence2]):
         if not check_legal_sequence(seq):
             continue
-        yield (*seq, "A")
+        yield "".join((*seq, "A"))
 
 
 @functools.cache
-def best_directional_move(dir_start, dir_end):
-    return "".join(
-        sorted(
-            generate_directional_sequences(dir_start, dir_end),
-            key=lambda x: len(x),
-        )[0]
-    )
-
-
-def get_robot_sequence(dir_sequence):
-    start = "A"
-    seq = ""
-    for v in dir_sequence:
-        seq += best_directional_move(start, v)
-        start = v
-    return seq
-
-
-@functools.cache
-def best_numpad_move(numpad_start, numpad_end, n):
-    best_len = 1_000_000_000_000
-    for numpad_seq in generate_numpad_sequences(numpad_start, numpad_end):
-        seq = numpad_seq
-        for i in range(n):
-            seq = get_robot_sequence(seq)
-        if best_len > len(seq):
-            best_len = len(seq)
-    return best_len
+def get_num_movements(seq, level, numpad=True):
+    res = 0
+    seq = "A" + seq
+    for u, v in itertools.pairwise(seq):
+        if numpad:
+            paths = [*generate_numpad_sequences(u, v)]
+        else:
+            paths = [*generate_directional_sequences(u, v)]
+        if level == 0:
+            res += min(map(len, paths))
+        else:
+            res += min(get_num_movements(path, level - 1, numpad=False) for path in paths)
+    return res
 
 
 def run(lines, n):
-    sum_ = 0
+    total = 0
     for line in lines:
-        num_moves = 0
-        start = "A"
-        for v in line:
-            num_moves += best_numpad_move(start, v, n)
-            start = v
-        sum_ += num_moves * int(line.replace("A", ""), base=10)
-    return sum_
+        total += get_num_movements(line, n) * int(line.replace("A", ""))
+    return total
 
 
 if __name__ == "__main__":
