@@ -28,13 +28,11 @@ def run(grid, pairs, to_save):
         for dr, dc in pairs:
             new_row = row + dr
             new_col = col + dc
-            try:
+            if 0 <= new_row < grid.shape[0] and 0 <= new_col < grid.shape[1]:
                 if (new_dist := distances[new_row, new_col]) != -1:
                     time_saved = dist - new_dist - (abs(dr) + abs(dc))
                     if time_saved >= to_save:
                         saved[time_saved] += 1
-            except IndexError:
-                pass
 
         if distances[start_row, start_col] != -1:
             break
@@ -55,14 +53,14 @@ def run(grid, pairs, to_save):
         else:
             raise ValueError()
 
-    for k, v in saved.items():
-        print(f"{k} seconds: {v}")
+    # for k, v in saved.items():
+    #    print(f"{k} seconds: {v}")
 
     return sum((v for (k, v) in saved.items() if k >= 100))
 
 
 if __name__ == "__main__":
-    with open(os.path.join(os.path.dirname(__file__), "example.txt")) as fp:
+    with open(os.path.join(os.path.dirname(__file__), "input.txt")) as fp:
         lines = fp.readlines()
     lines = [v.rstrip("\n") for v in lines]
     grid = np.array([list(line) for line in lines], dtype=str)
