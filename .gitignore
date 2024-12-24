@@ -3,7 +3,9 @@
 *.sublime-workspace
 __pycache__
 input.txt
+input.*.txt
 example.txt
 output.txt
 build
 *.pickle
+ignore.txt
