@@ -52,6 +52,8 @@ class Computer:
     def run(self, program):
         pointer = 0
         output = []
+        # print(f"{self._a:28b},  , ({self._a:6d} {self._b}, {self._c})")
+
         while pointer < len(program):
             assert pointer + 1 < len(program)
             opcode = program[pointer]
@@ -61,6 +63,7 @@ class Computer:
                 out, jump = a
                 if out is not None:
                     output.append(out)
+                    # print(f"{self._a:28b}, {out}, ({self._a:6d} {self._b}, {self._c})")
                 if jump is not None:
                     pointer = jump
                 else:
@@ -76,6 +79,19 @@ def part1(A, B, C, program):
     return ",".join((str(v) for v in output))
 
 
+def part2(program):
+    def find(A, match_level):
+        comp = Computer(A, 0, 0)
+        res = comp.run(program)
+        if res == program: 
+            return A
+        if res == program[-match_level:] or not match_level:
+            for n in range(8):
+                if (a:=find((A << 3)+n, match_level+1)) is not None:
+                    return a
+
+    return find(0, match_level=0)
+
 if __name__ == "__main__":
     with open(os.path.join(os.path.dirname(__file__), "input.txt")) as fin:
         lines = fin.read().strip().split("\n")
@@ -83,3 +99,4 @@ if __name__ == "__main__":
         program = list(map(int, lines[4].split(" ")[1].split(",")))
 
     print(f"Part 1: {part1(A, B, C, program)}")
+    print(f"Part 2: {part2(program)}")
