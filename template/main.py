@@ -1,7 +1,5 @@
 import os
 import copy
-from dataclasses import dataclass
-import numpy as np
 
 
 def part1(lines):
